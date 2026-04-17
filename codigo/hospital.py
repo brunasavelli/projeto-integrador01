@@ -1,32 +1,35 @@
 # --------------------------------------------
 # Sistema de fila hospitalar por prioridade
 # Prioridade:
-# 1º Urgência (maior primeiro)
-# 2º Impacto (desempate)
+# 1º Média (maior primeiro)
+# 2º Urgência (desempate)
 # --------------------------------------------
-
-import heapq
 
 fila = []
 
 def ler_inteiro_entre(min_val=1, max_val=5, prompt="Digite um número: "):
     while True:
-        val = input(prompt).strip()
+        val = input(prompt)
+        
         if not val.isdigit():
             print(f"Informe um número inteiro entre {min_val} e {max_val}.")
             continue
+        
         num = int(val)
+        
         if num < min_val or num > max_val:
             print(f"Informe um número entre {min_val} e {max_val}.")
             continue
+        
         return num
 
-def calcular_media(impacto: int, urgencia: int) -> float:
-    return (impacto + urgencia) / 2.0
+def calcular_media(impacto, urgencia):
+    return (impacto + urgencia) / 2
 
 def adicionar_paciente():
-    nome = input("Nome do paciente: ").strip()
-    if not nome:
+    nome = input("Nome do paciente: ")
+    
+    if nome == "":
         print("Nome não pode ser vazio.\n")
         return
 
@@ -35,17 +38,29 @@ def adicionar_paciente():
 
     media = calcular_media(impacto, urgencia)
 
-    # heapq é min-heap → usamos valores negativos para priorizar maiores
-    heapq.heappush(fila, (-urgencia, -impacto, nome, impacto, urgencia, media))
+    fila.append([nome, impacto, urgencia, media])
 
-    print(f"✅ Paciente '{nome}' adicionado com urgência {urgencia} e impacto {impacto}.\n")
+    print(f"✅ Paciente '{nome}' adicionado.\n")
 
 def chamar_proximo():
     if not fila:
         print("ℹ️  Não há pacientes na fila.\n")
         return
 
-    _, _, nome, impacto, urgencia, media = heapq.heappop(fila)
+    # Encontrar o índice do paciente com maior prioridade
+    indice_maior = 0
+
+    for i in range(1, len(fila)):
+        # compara média primeiro
+        if fila[i][3] > fila[indice_maior][3]:
+            indice_maior = i
+        # desempate por urgência
+        elif fila[i][3] == fila[indice_maior][3]:
+            if fila[i][2] > fila[indice_maior][2]:
+                indice_maior = i
+
+    paciente = fila.pop(indice_maior)
+    nome, impacto, urgencia, media = paciente
 
     print("\nChamando próximo paciente:\n")
     print(f"   Nome: {nome}")
@@ -58,16 +73,12 @@ def ver_fila():
         print("Fila vazia.\n")
         return
 
-    print("\n--- FILA ATUAL (ordenada por prioridade) ---")
+    print("\n--- FILA ATUAL ---")
 
-    # heap não é ordenado visualmente → precisamos ordenar para exibir
-    fila_ordenada = sorted(fila)
-
-    for item in fila_ordenada:
-        urg_neg, imp_neg, nome, impacto, urgencia, media = item
+    for nome, impacto, urgencia, media in fila:
         print(f"{nome} | Urgência: {urgencia} | Impacto: {impacto} | Média: {media:.1f}")
 
-    print("------------------------------------------\n")
+    print("------------------\n")
 
 def mostrar_menu():
     print("===== SISTEMA HOSPITALAR =====")
@@ -81,7 +92,7 @@ def mostrar_menu():
 if __name__ == "__main__":
     while True:
         mostrar_menu()
-        opcao = input("Escolha uma opção: ").strip()
+        opcao = input("Escolha uma opção: ")
 
         if opcao == "1":
             adicionar_paciente()
