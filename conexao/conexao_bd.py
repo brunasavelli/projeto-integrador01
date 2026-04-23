@@ -22,8 +22,8 @@ obtemConexao.conexao=None #deixa a conexao vazia denovo
 
 # Função para inserir um médico na tabela "medicos"
 def inserir_medico(nome, especialidade):
-    comando = "INSERT INTO medicos (nome, especialidade) VALUES ('{nome}', '{especialidade}')"# Comando SQL para inserir um médico
-    conexao = obterConexao("172.16.12.14", "BD240226129", "Izrfoa7", "BD240226129")# Obtém a conexão com o banco
+    comando = f"INSERT INTO medicos (nome, especialidade) VALUES ('{nome}', '{especialidade}')"# Comando SQL para inserir um médico
+    conexao = obtemConexao("172.16.12.14", "BD240226129", "Izfoa7", "BD240226129")# Obtém a conexão com o banco
     cursor = conexao.cursor()# Cria um cursor (objeto que executa comandos SQL)
     cursor.execute(comando)# Executa o comando SQL com os valores informados
     conexao.commit()# Confirma a operação (salva no banco de dados)
@@ -32,9 +32,8 @@ def inserir_medico(nome, especialidade):
 
 # Função para inserir um paciente na tabela "pacientes"
 def inserir_paciente(nome, data_nascimento, telefone, email):
-    comando = """ INSERT INTO pacientes (nome, data_nascimento, telefone, email) 
-    VALUES ('{nome}', '{data_nascimento}', '{telefone}', '{email}')"""# Comando SQL para inserir um paciente
-    conexao = obterConexao("172.16.12.14", "BD240226129", "Izrfoa7", "BD240226129") # Obtém a conexão com o banco
+    comando = f" INSERT INTO pacientes (nome, data_nascimento, telefone, email) VALUES ('{nome}', '{data_nascimento}', '{telefone}', '{email}')"# Comando SQL para inserir um paciente
+    conexao = obtemConexao("172.16.12.14", "BD240226129", "Izfoa7", "BD240226129") # Obtém a conexão com o banco
     cursor = conexao.cursor()# Cria o cursor para executar comandos SQL
     cursor.execute(comando)# Executa o comando SQL
     conexao.commit()# Salva no banco
@@ -43,9 +42,8 @@ def inserir_paciente(nome, data_nascimento, telefone, email):
 
 # Função para inserir um chamado na tabela "chamados"
 def inserir_chamado(id_paciente, id_medico, descricao, urgencia, prioridade):
-    comando = """INSERT INTO chamados (id_paciente, id_medico, descricao, urgencia, prioridade) 
-    VALUES ({id_paciente}, {id_medico}, '{descricao}', {urgencia}, '{prioridade}')"""# Comando SQL para inserir um chamado
-    conexao = obterConexao("172.16.12.14", "BD240226129", "Izrfoa7", "BD240226129")# Obtém a conexão com o banco
+    comando = f"INSERT INTO chamados (id_paciente, id_medico, descricao, urgencia, prioridade) VALUES ({id_paciente}, {id_medico}, '{descricao}', {urgencia}, '{prioridade}')" #Comando SQL para inserir um chamado
+    conexao = obtemConexao("172.16.12.14", "BD240226129", "Izfoa7", "BD240226129")# Obtém a conexão com o banco
     cursor = conexao.cursor()# Cria o cursor
     cursor.execute(comando)# Executa o comando SQL
     conexao.commit() # Confirma a inserção
