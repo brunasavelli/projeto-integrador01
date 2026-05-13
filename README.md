@@ -1,115 +1,120 @@
-# Sistema de fila Hospitalar
+# Sistema de Fila Hospitalar
 
 Projeto para chamar os pacientes de um hospital em python
 
-# Sobre o projeto: Sistema de fila Hospitalar tem como objetivo adicionar e organizar um hospital e os seus pacientes,
-usando como base para isso a prioridade de impacto e urgencia, assim descobrindo os primeiros que devem ser atendidos.
+## Sobre o Projeto: 
+Sistema de fila Hospitalar tem como objetivo adicionar e organizar um hospital e os seus pacientes,
+usando como base para isso a prioridade de impacto e urgência, assim descobrindo os primeiros que devem ser atendidos.
 
 **Problema que resolve:** Dificuldade em fazer uma ordem das pessoas que vão comparecendo, sendo que as vezes uma,
 pessoa com menos urgência é atendida primeiro que uma com risco de morte até.
 
-# O sistema realiza:
-  Cadastro de pacientes
-  Controle de prioridade
-  Chamada automática
-  Organização da fila
-  Integração com banco de dados
+### O sistema realiza:
+  * Cadastro de pacientes
+  * Controle de prioridade
+  * Chamada automática
+  * Organização da fila
+  * Integração com banco de dados
+
+
+### Funcionalidades:
+  * Adicionar pacientes
+  * Definir impacto
+  * Definir urgência
+  * Visualizar fila
+  * Chamar próximo paciente
+  * Armazenamento em banco de dados
 
 ----
 
-# Funcionalidades:
-  Adicionar pacientes
-  Definir impacto
-  Definir urgência
-  Visualizar fila
-  Chamar próximo paciente
-  Armazenamento em banco de dados
-
-----
-
-# Regra de prioridade: o criterio para descobrir os primeiros pacientes a serem chamados é a média entre o impacto e a,
-urgência logo será: media = (impacto + urgencia) / 2. Dessa forma é organizado o atendimento, em casos que o resultado
+## Regra de Prioridade: 
+O critério para descobrir os primeiros pacientes a serem chamados, é a média entre o impacto e a
+urgência logo será: média = (impacto + urgencia) / 2. <br>
+Dessa forma é organizado o atendimento, em casos que o resultado
 da média for igual será levado em consideração o paciente de maior urgência.
 
-# Tecnologias utilizadas:
-  -Python
-  -Mysql
-  -SQL
+----
 
-# Arquitetura do Sistema:
+## Tecnologias Utilizadas:
+  * Python
+  * MySQL
+  * SQL
+  * JavaScript
 
-├── main.py
-├── funcoes.py
-├── README.md
+## Arquitetura do Sistema:
 
-├── database/
-│   ├── banco.sql
-│   └── conexao.py
+├── main.py<br>
+├── funcoes.py<br>
+├── README.md<br>
 
-└── docs/
-    ├── documentacao_codigo.md
-    ├── documentacao_banco.md
+├── database/<br>
+│   ├── banco.sql<br>
+│   └── conexao.py<br>
+
+└── docs/<br>
+    ├── documentacao_codigo.md<br>
+    ├── documentacao_banco.md<br>
     └── documentacao_conexao.md
 
-# Como Executar:
+## Como Executar:
 
-1 Baixe os arquivos do projeto pelo GitHub.
+*1-* Baixe os arquivos do projeto pelo GitHub.
 
-2 Abra a pasta do projeto pelo seu editor de código de preferencia
+*2-* Abra a pasta do projeto pelo seu editor de código de preferencia
 
-3 Execute o script do banco de dados no MySQL:
+*3-* Execute o script do banco de dados no MySQL:
 
-database/banco.sql
+- database/banco.sql
 
-4 Verifique as informações da conexão no arquivo:
+*4-* Verifique as informações da conexão no arquivo:
 
-database/conexao.py
+- database/conexao.py
 
-5 Instale as bibliotecas necessárias:
+*5-* Instale as bibliotecas necessárias:
 
 ```bash
 pip install mysql-connector-python
 ```
 
-6 Execute o arquivo principal:
+*6-* Execute o arquivo principal:
 
 ```bash
 python main.py
 ```
 
+----
 
-# Documentação do Código:
+## Documentação do Código:
 
-main.py:
+**main.py:** <br>
 É responsável pelo menu pricipal do código e a execução do sistema.
 
-funçoes.py:
+**funçoes.py:** <br>
 É responsável pelas funções do sistema.
 
-Funções:
- adicionar pacientes
- chamar proximo paciente
- inserir médico
- visualizar fila
+### Funções:
+ * Adicionar pacientes
+ * Chamar proximo paciente
+ * Inserir médico
+ * Visualizar fila
 
 
-# Documentação do Banco de dados 
+## Documentação do Banco de Dados 
 
-o sistema usa o MySQL.
+O sistema usa o MySQL.
 
-Tabelas:
- médico
- pacientes 
- chamdos
+### Tabelas:
+ * Médico
+ * Pacientes 
+ * Chamados
 
-Objetivo:
+### Objetivo:
 É armazenar as informações do sistema hospitalar.
 
 
-# Documentação da conexão
-
+## Documentação da Conexão
 A conexão com o banco de dados é feita atráves da biblioteca mysql.connector.
 
-Arquivo responsável:
+**Arquivo responsável:** <br>
 database/conexao.py
 
