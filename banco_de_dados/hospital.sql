@@ -1,4 +1,4 @@
-CREATE DATABASE hospital_db;
+CREATE DATABASE if not exists hospital_db;
 USE hospital_db;
 
 CREATE TABLE medicos (

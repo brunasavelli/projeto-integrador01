@@ -4,10 +4,8 @@ import os
 
 load_dotenv(override=True)
 
-
 def obter_conexao():
 
-    conexao = None
     try:
         conexao = mysql.connector.connect(
             host=os.getenv("HOST"),
@@ -17,22 +15,23 @@ def obter_conexao():
         )
 
         print("Banco conectado com sucesso!")
+
         return conexao
 
     except Exception as erro:
         print("Erro ao conectar:")
         print(erro)
 
+        return None
 
-def fechar_conexao():
+
+def fechar_conexao(conexao):
 
     try:
-        conexao.close()
-        conexao = None
-        print("Conexão encerrada com sucesso!")
-    
+        if conexao:
+            conexao.close()
+            print("Conexão encerrada com sucesso!")
+
     except Exception as erro:
         print("Erro ao fechar conexão:")
         print(erro)
-
-
