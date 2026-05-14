@@ -1,0 +1,22 @@
+def medico(): -- teste ainda não concluído.
+    conexao = obter_conexao()
+    cursor = conexao.cursor()
+
+    sql = """
+        INSERT INTO medicos (nome, especialidade)
+        VALUES (%s, %s)
+    """
+
+    nome = input("Digite o nome do médico: ")
+    especialidade = input("Digite a especialidade: ")
+
+    valores = (nome, especialidade)
+
+    cursor.execute(sql, valores)
+    conexao.commit()
+
+    print("Médico inserido com sucesso!")
+
+    if conexao.is_connected():
+        cursor.close()
+        conexao.close()
