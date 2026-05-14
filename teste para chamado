@@ -1,0 +1,38 @@
+def chamado():
+    conexao = obter_conexao()
+    cursor = conexao.cursor()
+
+    id_paciente = input("Digite o id_paciente: ")
+    id_medico = input("Digite o id_medico: ")
+    descricao = input("Digite o problema: ")
+    urgencia = input("Digite a urgencia: ")
+    prioridade = input("Digite a prioridade: ")
+
+    sql = """
+
+        INSERT INTO chamados (id_paciente, id_medico, descricao, urgencia, prioridade)
+        VALUES (%s, %s, %s, %s, %s)
+
+    """
+
+    values = (id_paciente, id_medico, descricao, urgencia, prioridade)
+
+    cursor.execute(sql, values)
+    conexao.commit()
+
+    atendimento = input("O atendimento esta ocorrendo? S/N ")
+
+    if atendimento == "S":
+
+        sql2 = """
+
+            UPDATE chamados
+            SET status = 'atendimento ocorrendo'
+
+        """
+
+        cursor.execute(sql2)
+        conexao.commit()
+
+    else:
+        print("Nao atendido")
