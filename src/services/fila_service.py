@@ -1,3 +1,4 @@
+from src.config.database import fechar_conexao, obter_conexao
 from src.data.fila import fila
 from src.utils.input_utils import ler_inteiro_entre
 
@@ -6,20 +7,33 @@ def calcular_media(impacto, urgencia):
 
 
 def adicionar_paciente():
-    nome = input("Nome do paciente: ")
+    conexao = obter_conexao()
 
-    if nome == "":
-        print("Nome não pode ser vazio.\n")
-        return
+    if conexao is None:
+        return None
 
-    impacto = ler_inteiro_entre(1, 5, "Impacto (1 a 5): ")
-    urgencia = ler_inteiro_entre(1, 5, "Urgência (1 a 5): ")
+    try:
+        cursor = conexao.cursor()
 
-    media = calcular_media(impacto, urgencia)
+        sql = """
+        INSERT INTO pacientes (nome, data_nascimento, telefone, email)
+        VALUES ('ana', '19-05-2008', '(19)98855-2233', 'ana@gmail.com')
+        """
 
-    fila.append([nome, impacto, urgencia, media])
+        cursor.execute(sql)
+        conexao.commit()
 
-    print(f"✅ Paciente '{nome}' adicionado.\n")
+        return cursor.lastrowid  # retorna o ID inserido
+
+    except Exception as erro:
+        print("Erro:", erro)
+
+        cursor.close()
+        fechar_conexao(conexao)
+
+        return None
+    
+       
 
 
 def chamar_proximo():
