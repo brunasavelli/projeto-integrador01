@@ -72,6 +72,7 @@ def mostrar_menu():
     print("===== SISTEMA HOSPITALAR =====")
     print("1 - Adicionar paciente")
     print("2 - Chamar próximo paciente")
+    print("3 - Adicionar Médico")
     print("3 - Ver fila")
     print("0 - Sair")
     print("==============================\n")
