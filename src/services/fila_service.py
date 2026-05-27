@@ -1,6 +1,6 @@
-from src.config.database import fechar_conexao, obter_conexao
-from src.data.fila import fila
-from src.utils.input_utils import ler_inteiro_entre
+from config.database import fechar_conexao, obter_conexao
+from data.fila import fila
+from utils.input_utils import ler_inteiro_entre
 
 def calcular_media(impacto, urgencia):
     return (impacto + urgencia) / 2
@@ -21,7 +21,7 @@ def adicionar_paciente():
         #comando sql para inserir o paciente da tabela
         sql = """
         INSERT INTO pacientes (nome, data_nascimento, telefone, email)
-        VALUES ('ana', '19-05-2008', '(19)98855-2233', 'ana@gmail.com')
+        VALUES ('raquel', '2008-03-05', '(19)98855-2293', 'raquel@gmail.com')
         """
 
         #executa o comando sql no banco
