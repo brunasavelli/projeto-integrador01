@@ -22,6 +22,34 @@ def adicionar_paciente():
     print(f"✅ Paciente '{nome}' adicionado.\n")
 
 
+
+def criar_chamado():
+    if not fila:
+        print("Não há pacientes na fila para criar um chamado.\n")
+        return
+
+    print("\n--- PACIENTES NA FILA ---")
+    for i, (nome, impacto, urgencia, media, *_) in enumerate(fila):
+        print(f"{i + 1} - {nome} | Urgência: {urgencia} | Impacto: {impacto} | Média: {media:.1f}")
+    print("-------------------------\n")
+
+    indice = ler_inteiro_entre(1, len(fila), "Selecione o número do paciente: ") - 1
+
+    descricao = input("Descrição do chamado: ").strip()
+
+    if descricao == "":
+        print("Descrição não pode ser vazia.\n")
+        return
+
+    if len(fila[indice]) == 4:
+        fila[indice].append([])  # inicializa lista de chamados se ainda não existir
+
+    fila[indice][4].append(descricao)
+
+    print(f"Chamado criado para '{fila[indice][0]}'.\n")
+
+
+
 def chamar_proximo():
     if not fila:
         print("ℹ️ Não há pacientes na fila.\n")
@@ -57,7 +85,9 @@ def ver_fila():
 
     print("\n--- FILA ATUAL ---")
 
-    for nome, impacto, urgencia, media in fila:
+    for paciente in fila:
+        nome, impacto, urgencia, media = paciente[:4]
+        chamados = paciente[4] if len(paciente) > 4 else []
         print(
             f"{nome} | "
             f"Urgência: {urgencia} | "
@@ -73,5 +103,6 @@ def mostrar_menu():
     print("1 - Adicionar paciente")
     print("2 - Chamar próximo paciente")
     print("3 - Ver fila")
+    print("4 - Criar chamado")
     print("0 - Sair")
     print("==============================\n")
