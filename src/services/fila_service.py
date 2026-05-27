@@ -28,11 +28,15 @@ def criar_chamado():
         print("Não há pacientes na fila para criar um chamado.\n")
         return
 
+# enumerate serve para pegar o índice (i) e os dados do paciente
+
     print("\n--- PACIENTES NA FILA ---")
     for i, (nome, impacto, urgencia, media, *_) in enumerate(fila):
+        # i + 1 é usado porque a lista começa em 0, mas para o usuário começa em 1
         print(f"{i + 1} - {nome} | Urgência: {urgencia} | Impacto: {impacto} | Média: {media:.1f}")
     print("-------------------------\n")
 
+ # O -1 é para converter o número digitado para o índice real da lista
     indice = ler_inteiro_entre(1, len(fila), "Selecione o número do paciente: ") - 1
 
     descricao = input("Descrição do chamado: ").strip()
