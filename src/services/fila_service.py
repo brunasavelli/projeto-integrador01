@@ -19,7 +19,7 @@ def adicionar_paciente():
 
     fila.append([nome, impacto, urgencia, media])
 
-    print(f"✅ Paciente '{nome}' adicionado.\n")
+    print(f" Paciente '{nome}' adicionado.\n")
 
 
 
@@ -56,7 +56,7 @@ def criar_chamado():
 
 def chamar_proximo():
     if not fila:
-        print("ℹ️ Não há pacientes na fila.\n")
+        print("Não há pacientes na fila.\n")
         return
 
     indice_maior = 0
