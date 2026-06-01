@@ -1,8 +1,37 @@
 from src.data.fila import fila
+from src.config.database import fechar_conexao, obter_conexao
 from src.utils.input_utils import ler_inteiro_entre
+
 
 def calcular_media(impacto, urgencia):
     return (impacto + urgencia) / 2
+
+
+def definir_prioridade(media):
+    if media >= 4:
+        return 'Alta'
+
+    if media >= 2.5:
+        return 'Media'
+
+    return 'Baixa'
+
+
+def obter_ou_criar_paciente(cursor, nome):
+    cursor.execute(
+        'SELECT id_paciente FROM pacientes WHERE nome = %s LIMIT 1',
+        (nome,)
+    )
+    paciente = cursor.fetchone()
+
+    if paciente:
+        return paciente[0]
+
+    cursor.execute(
+        'INSERT INTO pacientes (nome) VALUES (%s)',
+        (nome,)
+    )
+    return cursor.lastrowid
 
 
 def adicionar_paciente():
@@ -22,36 +51,73 @@ def adicionar_paciente():
     print(f" Paciente '{nome}' adicionado.\n")
 
 
-
 def criar_chamado():
     if not fila:
         print("Não há pacientes na fila para criar um chamado.\n")
         return
 
-# enumerate serve para pegar o índice (i) e os dados do paciente
-
     print("\n--- PACIENTES NA FILA ---")
     for i, (nome, impacto, urgencia, media, *_) in enumerate(fila):
-        # i + 1 é usado porque a lista começa em 0, mas para o usuário começa em 1
         print(f"{i + 1} - {nome} | Urgência: {urgencia} | Impacto: {impacto} | Média: {media:.1f}")
     print("-------------------------\n")
 
- # O -1 é para converter o número digitado para o índice real da lista
     indice = ler_inteiro_entre(1, len(fila), "Selecione o número do paciente: ") - 1
-
     descricao = input("Descrição do chamado: ").strip()
 
     if descricao == "":
         print("Descrição não pode ser vazia.\n")
         return
 
+    id_medico = ler_inteiro_entre(1, 999999, "ID do médico responsável: ")
+
+    nome, impacto, urgencia, media = fila[indice][:4]
+    prioridade = definir_prioridade(media)
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível criar o chamado: sem conexão com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+        id_paciente = obter_ou_criar_paciente(cursor, nome)
+
+        cursor.execute(
+            """
+            INSERT INTO chamados (
+                id_paciente,
+                id_medico,
+                descricao,
+                urgencia,
+                prioridade
+            ) VALUES (%s, %s, %s, %s, %s)
+            """,
+            (id_paciente, id_medico, descricao, urgencia, prioridade)
+        )
+
+        conexao.commit()
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao criar chamado no banco de dados:")
+        print(erro)
+        print()
+        return
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        fechar_conexao(conexao)
+
     if len(fila[indice]) == 4:
-        fila[indice].append([])  # inicializa lista de chamados se ainda não existir
+        fila[indice].append([])
 
     fila[indice][4].append(descricao)
 
-    print(f"Chamado criado para '{fila[indice][0]}'.\n")
-
+    print(f"Chamado criado para '{nome}' com prioridade {prioridade}.\n")
 
 
 def chamar_proximo():
@@ -73,7 +139,7 @@ def chamar_proximo():
 
     paciente = fila.pop(indice_maior)
 
-    nome, impacto, urgencia, media = paciente
+    nome, impacto, urgencia, media = paciente[:4]
 
     print("\nChamando próximo paciente:\n")
     print(f"Nome: {nome}")
@@ -91,7 +157,6 @@ def ver_fila():
 
     for paciente in fila:
         nome, impacto, urgencia, media = paciente[:4]
-        chamados = paciente[4] if len(paciente) > 4 else []
         print(
             f"{nome} | "
             f"Urgência: {urgencia} | "
