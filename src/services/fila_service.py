@@ -1,30 +1,407 @@
 from src.data.fila import fila
+from src.config.database import fechar_conexao, obter_conexao
 from src.utils.input_utils import ler_inteiro_entre
+
+# FUNÇÕES AUXILIARES
 
 def calcular_media(impacto, urgencia):
     return (impacto + urgencia) / 2
 
+def definir_prioridade(media):
+    if media >= 4:
+        return 'Alta'
+
+    if media >= 2.5:
+        return 'Media'
+
+    return 'Baixa'
+
+
+# FUNÇÕES DE PACIENTES
+
+def obter_ou_criar_paciente(cursor, nome):
+    cursor.execute(
+        'SELECT id_paciente FROM pacientes WHERE nome = %s LIMIT 1',
+        (nome,)
+    )
+    paciente = cursor.fetchone()
+
+    if paciente:
+        return paciente[0]
+
+    cursor.execute(
+        'INSERT INTO pacientes (nome) VALUES (%s)',
+        (nome,)
+    )
+    return cursor.lastrowid
 
 def adicionar_paciente():
-    nome = input("Nome do paciente: ")
+    conexao = obter_conexao()
 
-    if nome == "":
-        print("Nome não pode ser vazio.\n")
+    if conexao is None:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        sql = """
+        INSERT INTO pacientes (nome, data_nascimento, telefone, email)
+        VALUES (%s, %s, %s, %s)
+        """
+        nome = input("Digite o nome do paciente: ")
+        data_nascimento = input("Digite a data de nascimento (YYYY-MM-DD): ")
+        telefone = input("Digite o telefone: ")
+        email = input("Digite o email: ")
+        valores = (nome, data_nascimento, telefone, email)
+        cursor.execute(sql, valores)
+
+        conexao.commit()
+
+        return cursor.lastrowid  
+
+    except Exception as erro:
+        print("Erro:", erro)
+        return None
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def listar_pacientes():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("SELECT id_paciente, nome, data_nascimento, telefone, email FROM pacientes")
+        pacientes = cursor.fetchall()
+
+        print("\n--- LISTA DE PACIENTES ---")
+        for id_paciente, nome, data_nascimento, telefone, email in pacientes:
+            print(f"ID: {id_paciente} | Nome: {nome} | Data de Nascimento: {data_nascimento} | Telefone: {telefone} | Email: {email}")
+        print("--------------------------\n")
+
+    except Exception as erro:
+        print("Erro:", erro)
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+# FUNÇÕES DE MÉDICOS
+
+def adicionar_medico():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        sql = """
+            INSERT INTO medicos (nome, especialidade)
+            VALUES (%s, %s)
+        """
+
+        nome = input("Digite o nome do médico: ")
+        especialidade = input("Digite a especialidade: ")
+
+        valores = (nome, especialidade)
+
+        cursor.execute(sql, valores)
+        conexao.commit()
+
+        print("Médico inserido com sucesso!")
+
+    except Exception as erro:
+        print("Erro:", erro)
+        conexao.rollback()
+    finally:
+        if cursor:
+            cursor.close()
+
+        fechar_conexao(conexao)
+
+def listar_medicos():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("SELECT id_medico, nome, especialidade FROM medicos")
+        medicos = cursor.fetchall()
+
+        print("\n--- LISTA DE MÉDICOS ---")
+        for id_medico, nome, especialidade in medicos:
+            print(f"ID: {id_medico} | Nome: {nome} | Especialidade: {especialidade}")
+        print("------------------------\n")
+
+    except Exception as erro:
+        print("Erro:", erro)
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+# FUNÇÕES DE CHAMADOS
+
+def criar_chamado():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível conectar ao banco.\n")
         return
 
-    impacto = ler_inteiro_entre(1, 5, "Impacto (1 a 5): ")
-    urgencia = ler_inteiro_entre(1, 5, "Urgência (1 a 5): ")
+    cursor = None
 
-    media = calcular_media(impacto, urgencia)
+    try:
+        cursor = conexao.cursor()
 
-    fila.append([nome, impacto, urgencia, media])
+        # Buscar pacientes cadastrados
+        cursor.execute("""
+            SELECT id_paciente, nome
+            FROM pacientes
+            ORDER BY nome
+        """)
 
-    print(f"✅ Paciente '{nome}' adicionado.\n")
+        pacientes = cursor.fetchall()
 
+        if not pacientes:
+            print("Não há pacientes cadastrados.\n")
+            return
+
+        print("\n--- PACIENTES CADASTRADOS ---")
+        for i, (id_paciente, nome) in enumerate(pacientes, start=1):
+            print(f"{i} - {nome} (ID: {id_paciente})")
+        print("-----------------------------\n")
+
+        indice = ler_inteiro_entre(
+            1,
+            len(pacientes),
+            "Selecione o paciente: "
+        ) - 1
+
+        id_paciente, nome = pacientes[indice]
+
+        descricao = input("Descrição do chamado: ").strip()
+
+        if not descricao:
+            print("Descrição não pode ser vazia.\n")
+            return
+
+        urgencia = ler_inteiro_entre(
+            1,
+            5,
+            "Informe a urgência (1 a 5): "
+        )
+
+        impacto = ler_inteiro_entre(
+            1,
+            5,
+            "Informe o impacto (1 a 5): "
+        )
+
+        media = calcular_media(impacto, urgencia)
+        prioridade = definir_prioridade(media)
+
+        id_medico = ler_inteiro_entre(
+            1,
+            999999,
+            "ID do médico responsável: "
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO chamados (
+                id_paciente,
+                id_medico,
+                descricao,
+                urgencia,
+                impacto,
+                prioridade
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                id_paciente,
+                id_medico,
+                descricao,
+                urgencia,
+                impacto,
+                prioridade
+            )
+        )
+
+        conexao.commit()
+
+        print(
+            f"\nChamado criado com sucesso para "
+            f"'{nome}' com prioridade {prioridade}.\n"
+        )
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao criar chamado:")
+        print(erro)
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        fechar_conexao(conexao)
+
+def ver_chamados():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível consultar chamados: sem conexão com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT c.id_chamado, p.nome, m.nome, c.descricao, c.urgencia, c.impacto, c.prioridade, c.status, c.data_abertura
+            FROM chamados c
+            JOIN pacientes p ON c.id_paciente = p.id_paciente
+            JOIN medicos m ON c.id_medico = m.id_medico
+            ORDER BY c.data_abertura DESC
+        """)
+
+        chamados = cursor.fetchall()
+
+        if not chamados:
+            print("Nenhum chamado encontrado.\n")
+            return
+
+        print("\n--- LISTA DE CHAMADOS ---")
+        for (
+            id_chamado, 
+            nome_paciente, 
+            nome_medico, 
+            descricao, 
+            urgencia, 
+            impacto, 
+            prioridade, 
+            status, 
+            data_abertura
+        ) in chamados:
+            
+            print(
+                f"ID: {id_chamado} | "
+                f"Descrição: {descricao} | "
+                f"Urgência: {urgencia} | "
+                f"Impacto: {impacto} | "
+                f"Prioridade: {prioridade} | "
+                f"Status: {status}"
+            )
+        print("-------------------------\n")
+
+    except Exception as erro:
+        print("Erro ao consultar chamados no banco de dados:")
+        print(erro)
+        print()
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def iniciar_chamado():
+    id_chamado = ler_inteiro_entre(1, 999999, "ID do chamado a iniciar: ")
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível iniciar chamado: sem conexão com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute(
+            "UPDATE chamados SET status = 'Em Andamento' WHERE id_chamado = %s",
+            (id_chamado,)
+        )
+
+        if cursor.rowcount == 0:
+            print(f"Nenhum chamado encontrado com ID {id_chamado}.\n")
+            return
+
+        conexao.commit()
+        print(f"Chamado {id_chamado} iniciado com sucesso.\n")
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao iniciar chamado no banco de dados:")
+        print(erro)
+        print()
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def finalizar_chamado():
+    id_chamado = ler_inteiro_entre(1, 999999, "ID do chamado a finalizar: ")
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível finalizar chamado: sem conexão com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute(
+            "UPDATE chamados SET status = 'Finalizado' WHERE id_chamado = %s",
+            (id_chamado,)
+        )
+
+        if cursor.rowcount == 0:
+            print(f"Nenhum chamado encontrado com ID {id_chamado}.\n")
+            return
+
+        conexao.commit()
+        print(f"Chamado {id_chamado} finalizado com sucesso.\n")
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao finalizar chamado no banco de dados:")
+        print(erro)
+        print()
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
 
 def chamar_proximo():
     if not fila:
-        print("ℹ️ Não há pacientes na fila.\n")
+        print("Não há pacientes na fila.\n")
         return
 
     indice_maior = 0
@@ -41,14 +418,13 @@ def chamar_proximo():
 
     paciente = fila.pop(indice_maior)
 
-    nome, impacto, urgencia, media = paciente
+    nome, impacto, urgencia, media = paciente[:4]
 
     print("\nChamando próximo paciente:\n")
     print(f"Nome: {nome}")
     print(f"Impacto: {impacto}")
     print(f"Urgência: {urgencia}")
     print(f"Média: {media:.1f}\n")
-
 
 def ver_fila():
     if not fila:
@@ -57,7 +433,8 @@ def ver_fila():
 
     print("\n--- FILA ATUAL ---")
 
-    for nome, impacto, urgencia, media in fila:
+    for paciente in fila:
+        nome, impacto, urgencia, media = paciente[:4]
         print(
             f"{nome} | "
             f"Urgência: {urgencia} | "
@@ -68,11 +445,181 @@ def ver_fila():
     print("------------------\n")
 
 
-def mostrar_menu():
-    print("===== SISTEMA HOSPITALAR =====")
-    print("1 - Adicionar paciente")
-    print("2 - Chamar próximo paciente")
-    print("3 - Adicionar Médico")
-    print("3 - Ver fila")
-    print("0 - Sair")
-    print("==============================\n")
+# FILTROS DE STATUS
+
+def status_em_espera():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE status = 'Em Espera'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados em espera:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def status_em_andamento():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE status = 'Em Andamento'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados em andamento:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def status_finalizado():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE status = 'Finalizado'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados finalizados:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+
+# FILTROS DE PRIORIDADE
+
+def prioridade_alta():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE prioridade = 'Alta'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados com prioridade ALTA:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def prioridade_media():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE prioridade = 'Media'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados com prioridade MÉDIA:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
+
+def prioridade_baixa():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return []
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            SELECT id_chamado, id_paciente, id_medico, descricao, urgencia, impacto, prioridade, status, data_abertura
+            FROM chamados
+            WHERE prioridade = 'Baixa'
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao consultar chamados com prioridade BAIXA:")
+        print(erro)
+        return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)

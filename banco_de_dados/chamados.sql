@@ -7,6 +7,7 @@ CREATE TABLE chamados (
 
     descricao TEXT NOT NULL,
     urgencia INT NOT NULL,
+    
     prioridade VARCHAR(10),
     
     status VARCHAR(20) DEFAULT 'Em Espera',
