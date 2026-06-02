@@ -5,6 +5,15 @@
 # 2º Urgência (desempate)
 # --------------------------------------------
 
+# import sys
+# import os
+
+# sys.path.append(
+#     os.path.abspath(
+#         os.path.join(os.path.dirname(__file__), "..")
+#     )
+# )
+
 from src.services.fila_service import (
     adicionar_paciente,
     listar_pacientes,
