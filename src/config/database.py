@@ -14,8 +14,6 @@ def obter_conexao():
             database=os.getenv("NAME")
         )
 
-        print("Banco conectado com sucesso!")
-
         return conexao
 
     except Exception as erro:
@@ -30,7 +28,6 @@ def fechar_conexao(conexao):
     try:
         if conexao:
             conexao.close()
-            print("Conexão encerrada com sucesso!")
 
     except Exception as erro:
         print("Erro ao fechar conexão:")
