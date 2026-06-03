@@ -1,37 +1,54 @@
 # Sistema de Fila Hospitalar
 
-Projeto para chamar os pacientes de um hospital em python
+Projeto em Python para gerenciar pacientes, médicos e chamados em um sistema hospitalar.
 
 ## Sobre o Projeto: 
-Sistema de fila Hospitalar tem como objetivo adicionar e organizar um hospital e os seus pacientes,
-usando como base para isso a prioridade de impacto e urgência, assim descobrindo os primeiros que devem ser atendidos.
+O Sistema de Fila Hospitalar tem como objetivo cadastrar pacientes, registrar médicos e controlar chamados hospitalares com base na urgência e no impacto informados para cada paciente.
 
-**Problema que resolve:** Dificuldade em fazer uma ordem das pessoas que vão comparecendo, sendo que as vezes uma,
-pessoa com menos urgência é atendida primeiro que uma com risco de morte até.
+A prioridade é calculada usando a média entre impacto e urgência, ajudando a identificar quais casos precisam de mais atenção.
+
+**Problema que resolve:** Ajuda a organizar atendimentos hospitalares, evitando que pacientes com maior urgência sejam deixados para depois.
 
 ### O sistema realiza:
   * Cadastro de pacientes
-  * Controle de prioridade
-  * Chamada automática
-  * Organização da fila
-  * Integração com banco de dados
+  * Cadastro de médicos
+  * Criação de chamados
+  * Listagem de pacientes
+  * Visualização de chamados
+  * Filtro de chamados por status
+  * Filtro de chamados por prioridade
+  * Atualização do status dos chamados
+  * Integração com banco de dados MySQL
 
 
 ### Funcionalidades:
   * Adicionar pacientes
   * Definir impacto
   * Definir urgência
-  * Visualizar fila
-  * Chamar próximo paciente
-  * Armazenamento em banco de dados
+  * Calcular prioridade
+  * Abrir chamado
+  * Ver chamados
+  * Iniciar chamado
+  * Finalizar chamado
+  * Adicionar médico
+  * Listar pacientes
+  * Armazenar dados no banco de dados
+
 
 ----
 
 ## Regra de Prioridade: 
-O critério para descobrir os primeiros pacientes a serem chamados, é a média entre o impacto e a
-urgência logo será: média = (impacto + urgencia) / 2. <br>
-Dessa forma é organizado o atendimento, em casos que o resultado
-da média for igual será levado em consideração o paciente de maior urgência.
+O critério usado para definir a prioridade do paciente é a média entre impacto e urgência:
+
+```python
+media = (impacto + urgencia) / 2
+```
+A prioridade é definida assim:
+ * Média maior ou igual a 4: Alta
+ * Média maior ou igual a 2.5: Média
+ * Média menor que 2.5: Baixa
+
+Também existe uma função para chamar o próximo paciente da fila. Nela, o paciente com maior média é chamado primeiro. Em caso de empate, é chamado o paciente com maior urgência.
 
 ----
 
@@ -39,82 +56,148 @@ da média for igual será levado em consideração o paciente de maior urgência
   * Python
   * MySQL
   * SQL
-  * JavaScript
+  * mysql-connector-python
+  * python-dotenv
 
 ## Arquitetura do Sistema:
 
-├── main.py<br>
-├── funcoes.py<br>
-├── README.md<br>
-
-├── database/<br>
-│   ├── banco.sql<br>
-│   └── conexao.py<br>
-
-└── docs/<br>
-    ├── documentacao_codigo.md<br>
-    ├── documentacao_banco.md<br>
-    └── documentacao_conexao.md
+```text
+projeto-integrador01/
+├── README.md
+├── requirements.txt
+├── .env
+└── codigo/
+    ├── main.py
+    └── src/
+        ├── config/
+        │   └── database.py
+        ├── data/
+        │   └── fila.py
+        ├── services/
+        │   └── fila_service.py
+        ├── utils/
+        │   └── input_utils.py
+        └── banco_de_dados/
+            ├── pacientes.sql
+            ├── medicos.sql
+            └── chamados.sql
+```
 
 ## Como Executar:
 
 *1-* Baixe os arquivos do projeto pelo GitHub.
 
-*2-* Abra a pasta do projeto pelo seu editor de código de preferencia
+*2-* Abra a pasta do projeto pelo seu editor de código de preferência
 
-*3-* Execute o script do banco de dados no MySQL:
+*3-* Crie o banco de dados no MySQL:
 
-- database/banco.sql
+    CREATE DATABASE hospital_db;
 
-*4-* Verifique as informações da conexão no arquivo:
+*4-* Execute os scripts SQL dentro da pasta banco_de_dados:
 
-- database/conexao.py
+banco_de_dados/pacientes.sql <br>
+banco_de_dados/medicos.sql<br>
+banco_de_dados/chamados.sql<br>
 
-*5-* Instale as bibliotecas necessárias:
+*5-* Configure o arquivo .env com os dados da conexão: 
 
+HOST=localhost<br>
+USER=seu_usuario<br>
+PASSWORD=sua_senha<br>
+NAME=hospital_db<br>
+
+*6-* Instale as bibliotecas necessárias: 
 ```bash
-pip install mysql-connector-python
+pip install -r requirements.txt
 ```
-
-*6-* Execute o arquivo principal:
-
+*7-* Execute o arquivo principal: 
 ```bash
-python main.py
+python codigo/main.py
 ```
 
 ----
 
 ## Documentação do Código:
 
-**main.py:** <br>
-É responsável pelo menu pricipal do código e a execução do sistema.
+**codigo/main.py:** <br>
+É responsável pelo menu principal e pela execução do sistema.
 
-**funçoes.py:** <br>
-É responsável pelas funções do sistema.
+O menu possui as opções:
 
-### Funções:
- * Adicionar pacientes
- * Chamar proximo paciente
- * Inserir médico
- * Visualizar fila
+* Cadastrar paciente
+* Abrir chamado
+* Ver chamados
+* Iniciar chamado
+* Finalizar chamado
+* Adicionar médico
+* Listar pacientes
+* Sair
+
+**src/services/fila_service.py:** <br>
+Contém as principais regras e funções do sistema, como:
+
+* Calcular média
+* Definir prioridade
+* Adicionar paciente
+* Adicionar médico
+* Criar chamado
+* Ver chamados
+* Iniciar chamado
+* Finalizar chamado
+* Listar pacientes
+* Chamar próximo paciente
+* Ver fila
+
+**src/data/fila.py:** <br>
+Armazena a fila temporária de pacientes em uma lista Python.
+
+**src/config/database.py:** <br>
+Responsável por abrir e fechar a conexão com o banco de dados MySQL usando a biblioteca mysql.connector.
+
+**srvc/utils/input_utils.py:** <br>
+Contém função auxiliar para validar entrada de números inteiros dentro de um intervalo.
 
 
 ## Documentação do Banco de Dados 
 
 O sistema usa o MySQL.
 
-### Tabelas:
- * Médico
- * Pacientes 
- * Chamados
+### Tabelas
+* pacientes
+* medicos
+* chamados
 
-### Objetivo:
-É armazenar as informações do sistema hospitalar.
+### Tabela pacientes
+Armazena os dados dos pacientes:
+* ID
+* Nome
+* Data de nascimento
+* Telefone
+* Email
+
+### Tabela medicos
+Armazena os dados dos médicos:
+* ID
+* CRM
+* Nome
+* Especialidade
+
+### Tabela chamados
+Armazena os chamados criados no sistema:
+* ID do chamado
+* Paciente
+* Médico
+* Descrição
+* Urgência
+* Prioridade
+* Status
+* Data de abertura
 
 
-## Documentação da Conexão
-A conexão com o banco de dados é feita atráves da biblioteca mysql.connector.
+## Documentação da Conexão:
+A conexão com o banco de dados é feita através da biblioteca mysql.connector.
 
-**Arquivo responsável:** <br>
-database/conexao.py
+O arquivo responsável pela conexão é: <br>
+src/config/database.py
 
+As informações de conexão são lidas do arquivo .env.
