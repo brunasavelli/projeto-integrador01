@@ -3,12 +3,6 @@ from src.config.database import fechar_conexao, obter_conexao
 from src.utils.input_utils import ler_inteiro_entre
 
 
-MEDICOS = [
-    ("Dr. Carlos Silva", "Cardiologia"),
-    ("Dra. Ana Santos", "Pneumologia"),
-    ("Dr. Felipe Oliveira", "Neurocirurgia"),
-]
-
 STATUS_CHAMADOS = ["Aberta", "Em andamento", "Fechada"]
 
 
@@ -26,7 +20,7 @@ def definir_prioridade(media):
     return 'Baixa'
 
 
-def obter_ou_criar_paciente(cursor, nome):
+def obter_ou_criar_paciente(cursor, nome, data_nascimento=None, telefone=None, email=None):
     cursor.execute(
         'SELECT id_paciente FROM pacientes WHERE nome = %s LIMIT 1',
         (nome,)
@@ -37,8 +31,11 @@ def obter_ou_criar_paciente(cursor, nome):
         return paciente[0]
 
     cursor.execute(
-        'INSERT INTO pacientes (nome) VALUES (%s)',
-        (nome,)
+        """
+        INSERT INTO pacientes (nome, data_nascimento, telefone, email)
+        VALUES (%s, %s, %s, %s)
+        """,
+        (nome, data_nascimento, telefone, email)
     )
     return cursor.lastrowid
 
@@ -61,6 +58,17 @@ def obter_medico_por_nome(cursor, nome_medico):
     return None
 
 
+def listar_medicos(cursor):
+    cursor.execute(
+        """
+        SELECT id_medico, nome, especialidade
+        FROM medicos
+        ORDER BY nome
+        """
+    )
+    return cursor.fetchall()
+
+
 def obter_indice_paciente_por_nome(nome_paciente):
     for i, paciente in enumerate(fila):
         if paciente[0].lower() == nome_paciente.lower():
@@ -70,10 +78,28 @@ def obter_indice_paciente_por_nome(nome_paciente):
 
 
 def adicionar_paciente():
-    nome = input("Nome do paciente: ")
+    nome = input("Nome do paciente: ").strip()
 
     if nome == "":
         print("Nome não pode ser vazio.\n")
+        return
+
+    data_nascimento = input("Data de nascimento (AAAA-MM-DD): ").strip()
+
+    if data_nascimento == "":
+        print("Data de nascimento nao pode ser vazia.\n")
+        return
+
+    telefone = input("Telefone do paciente: ").strip()
+
+    if telefone == "":
+        print("Telefone nao pode ser vazio.\n")
+        return
+
+    email = input("Email do paciente: ").strip()
+
+    if email == "":
+        print("Email nao pode ser vazio.\n")
         return
 
     impacto = ler_inteiro_entre(1, 5, "Impacto (1 a 5): ")
@@ -81,9 +107,58 @@ def adicionar_paciente():
 
     media = calcular_media(impacto, urgencia)
 
-    fila.append([nome, impacto, urgencia, media])
+    fila.append([nome, impacto, urgencia, media, data_nascimento, telefone, email])
 
     print(f" Paciente '{nome}' adicionado.\n")
+
+
+def adicionar_medico():
+    nome = input("Nome do medico: ").strip()
+
+    if nome == "":
+        print("Nome nao pode ser vazio.\n")
+        return
+    
+
+    especialidade = input("Especialidade: ").strip()
+
+    if especialidade == "":
+        print("Especialidade nao pode ser vazia.\n")
+        return
+
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Nao foi possivel adicionar medico: sem conexao com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+        cursor.execute(
+            """
+            INSERT INTO medicos (nome, especialidade)
+            VALUES (%s, %s)
+            """,
+            (nome, especialidade)
+        )
+        conexao.commit()
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao adicionar medico no banco de dados:")
+        print(erro)
+        print()
+        return
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        fechar_conexao(conexao)
+
+    print(f"Medico '{nome}' adicionado.\n")
 
 
 def criar_chamado():
@@ -117,7 +192,7 @@ def criar_chamado():
         print("Descrição não pode ser vazia.\n")
         return
 
-    nome, impacto, urgencia, media = fila[indice][:4]
+    nome, impacto, urgencia, media, data_nascimento, telefone, email = fila[indice][:7]
     prioridade = definir_prioridade(media)
     conexao = obter_conexao()
 
@@ -129,28 +204,26 @@ def criar_chamado():
 
     try:
         cursor = conexao.cursor()
+        medicos = listar_medicos(cursor)
+
+        if not medicos:
+            print("Nenhum medico cadastrado. Cadastre um medico primeiro.\n")
+            return
 
         while True:
             print()
             print("+----+---------------------+---------------+")
             print("| No | Medico              | Especialidade |")
             print("+----+---------------------+---------------+")
-            for i, (nome_medico, especialidade) in enumerate(MEDICOS):
+            for i, (_, nome_medico, especialidade) in enumerate(medicos):
                 print(f"| {i + 1:<2} | {nome_medico:<19} | {especialidade:<13} |")
             print("+----+---------------------+---------------+")
 
-            indice_medico = ler_inteiro_entre(1, len(MEDICOS), "Selecione o médico: ") - 1
-            nome_medico = MEDICOS[indice_medico][0]
+            indice_medico = ler_inteiro_entre(1, len(medicos), "Selecione o medico: ") - 1
+            id_medico = medicos[indice_medico][0]
+            break
 
-            id_medico = obter_medico_por_nome(cursor, nome_medico)
-
-            if id_medico is not None:
-                break
-
-            print("Não foi encontrado médico com esse nome.")
-            print("Selecione outro médico.\n")
-
-        id_paciente = obter_ou_criar_paciente(cursor, nome)
+        id_paciente = obter_ou_criar_paciente(cursor, nome, data_nascimento, telefone, email)
 
         cursor.execute(
             """
@@ -181,10 +254,10 @@ def criar_chamado():
 
         fechar_conexao(conexao)
 
-    if len(fila[indice]) == 4:
+    if len(fila[indice]) == 7:
         fila[indice].append([])
 
-    fila[indice][4].append(descricao)
+    fila[indice][7].append(descricao)
 
     print(f"Chamado criado para '{nome}' com prioridade {prioridade}.\n")
 
