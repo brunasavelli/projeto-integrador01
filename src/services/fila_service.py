@@ -61,7 +61,7 @@ def obter_medico_por_nome(cursor, nome_medico):
 def listar_medicos(cursor):
     cursor.execute(
         """
-        SELECT id_medico, nome, especialidade
+        SELECT id_medico, crm, nome, especialidade
         FROM medicos
         ORDER BY nome
         """
@@ -113,6 +113,12 @@ def adicionar_paciente():
 
 
 def adicionar_medico():
+    crm = input("CRM do medico: ").strip()
+
+    if crm == "":
+        print("CRM nao pode ser vazio.\n")
+        return
+
     nome = input("Nome do medico: ").strip()
 
     if nome == "":
@@ -137,11 +143,11 @@ def adicionar_medico():
     try:
         cursor = conexao.cursor()
         cursor.execute(
-            """
-            INSERT INTO medicos (nome, especialidade)
-            VALUES (%s, %s)
+            f"""
+            INSERT INTO medicos (crm, nome, especialidade)
+            VALUES (%s, %s, %s)
             """,
-            (nome, especialidade)
+            (crm, nome, especialidade)
         )
         conexao.commit()
 
@@ -212,12 +218,12 @@ def criar_chamado():
 
         while True:
             print()
-            print("+----+---------------------+---------------+")
-            print("| No | Medico              | Especialidade |")
-            print("+----+---------------------+---------------+")
-            for i, (_, nome_medico, especialidade) in enumerate(medicos):
-                print(f"| {i + 1:<2} | {nome_medico:<19} | {especialidade:<13} |")
-            print("+----+---------------------+---------------+")
+            print("+----+------------+---------------------+---------------+")
+            print("| No | CRM        | Medico              | Especialidade |")
+            print("+----+------------+---------------------+---------------+")
+            for i, (_, crm, nome_medico, especialidade) in enumerate(medicos):
+                print(f"| {i + 1:<2} | {crm:<10} | {nome_medico:<19} | {especialidade:<13} |")
+            print("+----+------------+---------------------+---------------+")
 
             indice_medico = ler_inteiro_entre(1, len(medicos), "Selecione o medico: ") - 1
             id_medico = medicos[indice_medico][0]
@@ -309,7 +315,114 @@ def ver_fila():
     print("------------------\n")
 
 
+def listar_pacientes():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Nao foi possivel listar os pacientes: sem conexao com o banco.\n")
+        return
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+        cursor.execute(
+            f"""
+            SELECT
+                id_paciente,
+                nome,
+                DATE_FORMAT(data_nascimento, '%d/%m/%Y'),
+                telefone,
+                email
+            FROM pacientes
+            ORDER BY nome
+            """
+        )
+        pacientes = cursor.fetchall()
+
+    except Exception as erro:
+        print("Erro ao buscar pacientes no banco de dados:")
+        print(erro)
+        print()
+        return
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        fechar_conexao(conexao)
+
+    if not pacientes:
+        print("\nNenhum paciente cadastrado.\n")
+        return
+
+    print()
+    print("+------+----------------------+------------+----------------------+----------------------------+")
+    print("| ID   | Nome                 | Nascimento | Telefone             | Email                      |")
+    print("+------+----------------------+------------+----------------------+----------------------------+")
+
+    for id_paciente, nome, data_nascimento, telefone, email in pacientes:
+        data_nascimento = data_nascimento or ""
+        telefone = telefone or ""
+        email = email or ""
+        print(
+            f"| {id_paciente:<4} | "
+            f"{nome[:20]:<20} | "
+            f"{data_nascimento:<10} | "
+            f"{telefone[:20]:<20} | "
+            f"{email[:26]:<26} |"
+        )
+
+    print("+------+----------------------+------------+----------------------+----------------------------+")
+    print()
+
+
 def ver_chamados():
+    print()
+    print("+----+-------------------+")
+    print("| No | Filtro            |")
+    print("+----+-------------------+")
+    print("| 1  | Todos             |")
+    print("| 2  | Por status        |")
+    print("| 3  | Por prioridade    |")
+    print("+----+-------------------+")
+
+    opcao_filtro = ler_inteiro_entre(1, 3, "Selecione o filtro: ")
+    where = ""
+    parametros = ()
+
+    if opcao_filtro == 2:
+        print()
+        print("+----+---------------+")
+        print("| No | Status        |")
+        print("+----+---------------+")
+
+        for i, status in enumerate(STATUS_CHAMADOS):
+            print(f"| {i + 1:<2} | {status:<13} |")
+
+        print("+----+---------------+")
+
+        indice_status = ler_inteiro_entre(1, len(STATUS_CHAMADOS), "Selecione o status: ") - 1
+        where = "WHERE c.status = %s"
+        parametros = (STATUS_CHAMADOS[indice_status],)
+
+    elif opcao_filtro == 3:
+        prioridades = ["Alta", "Media", "Baixa"]
+
+        print()
+        print("+----+------------+")
+        print("| No | Prioridade |")
+        print("+----+------------+")
+
+        for i, prioridade in enumerate(prioridades):
+            print(f"| {i + 1:<2} | {prioridade:<10} |")
+
+        print("+----+------------+")
+
+        indice_prioridade = ler_inteiro_entre(1, len(prioridades), "Selecione a prioridade: ") - 1
+        where = "WHERE c.prioridade = %s"
+        parametros = (prioridades[indice_prioridade],)
+
     conexao = obter_conexao()
 
     if conexao is None:
@@ -320,8 +433,7 @@ def ver_chamados():
 
     try:
         cursor = conexao.cursor()
-        cursor.execute(
-            """
+        consulta = f"""
             SELECT
                 c.id_chamado,
                 p.nome,
@@ -335,9 +447,10 @@ def ver_chamados():
             FROM chamados c
             INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
             INNER JOIN medicos m ON c.id_medico = m.id_medico
+            {where}
             ORDER BY c.data_abertura DESC
             """
-        )
+        cursor.execute(consulta, parametros)
         chamados = cursor.fetchall()
 
     except Exception as erro:
@@ -385,7 +498,7 @@ def ver_chamados():
     print()
 
 
-def atualizar_status_chamado():
+def alterar_status_chamado(novo_status):
     conexao = obter_conexao()
 
     if conexao is None:
@@ -433,19 +546,6 @@ def atualizar_status_chamado():
 
             print("Não foi encontrado chamado com esse ID.\n")
 
-        print()
-        print("+----+---------------+")
-        print("| No | Novo status   |")
-        print("+----+---------------+")
-
-        for i, status in enumerate(STATUS_CHAMADOS):
-            print(f"| {i + 1:<2} | {status:<13} |")
-
-        print("+----+---------------+")
-
-        indice_status = ler_inteiro_entre(1, len(STATUS_CHAMADOS), "Selecione o status: ") - 1
-        novo_status = STATUS_CHAMADOS[indice_status]
-
         cursor.execute(
             """
             UPDATE chamados
@@ -470,6 +570,14 @@ def atualizar_status_chamado():
         fechar_conexao(conexao)
 
     print(f"Status do chamado {id_chamado} atualizado para '{novo_status}'.\n")
+
+
+def iniciar_chamado():
+    alterar_status_chamado("Em andamento")
+
+
+def finalizar_chamado():
+    alterar_status_chamado("Fechada")
 
 
 def mostrar_menu():
