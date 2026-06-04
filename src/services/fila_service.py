@@ -1,3 +1,5 @@
+import re
+
 from src.data.fila import fila
 from src.config.database import fechar_conexao, obter_conexao
 from src.utils.input_utils import ler_inteiro_entre
@@ -58,7 +60,7 @@ def obter_medico_por_nome(cursor, nome_medico):
     return None
 
 
-def listar_medicos(cursor):
+def _buscar_medicos(cursor):
     cursor.execute(
         """
         SELECT id_medico, crm, nome, especialidade
@@ -78,42 +80,116 @@ def obter_indice_paciente_por_nome(nome_paciente):
 
 
 def adicionar_paciente():
-    nome = input("Nome do paciente: ").strip()
+    print("Digite 0 em qualquer campo para cancelar.\n")
 
-    if nome == "":
-        print("Nome não pode ser vazio.\n")
+    while True:
+        nome = input("Nome do paciente: ").strip()
+        if nome == "0":
+            print("Operação cancelada.\n")
+            return
+        if nome == "":
+            print("Nome não pode ser vazio.\n")
+            continue
+        if not re.match(r'^[a-zA-ZÀ-ÿ\s]+$', nome):
+            print("Nome deve conter apenas letras.\n")
+            continue
+        break
+
+    while True:
+        data_str = input("Data de nascimento (AAAAMMDD): ").strip()
+        if data_str == "0":
+            print("Operação cancelada.\n")
+            return
+        if not re.match(r'^\d{8}$', data_str):
+            print("Data deve conter exatamente 8 números (ex: 19900525).\n")
+            continue
+        mes = int(data_str[4:6])
+        dia = int(data_str[6:8])
+        if not (1 <= mes <= 12 and 1 <= dia <= 31):
+            print("Data inválida. Verifique mês (01-12) e dia (01-31).\n")
+            continue
+        data_nascimento = f"{data_str[:4]}-{data_str[4:6]}-{data_str[6:8]}"
+        break
+
+    while True:
+        telefone = input("Telefone do paciente (ex: 11987654321 ou (11) 98765-4321): ").strip()
+        if telefone == "0":
+            print("Operação cancelada.\n")
+            return
+        if telefone == "":
+            print("Telefone não pode ser vazio.\n")
+            continue
+        if not re.match(r'^[\d()\-\s]+$', telefone):
+            print("Telefone deve conter apenas números, parênteses e traço.\n")
+            continue
+        digitos = re.sub(r'\D', '', telefone)
+        if len(digitos) == 10:
+            telefone = f"({digitos[:2]}) {digitos[2:6]}-{digitos[6:]}"
+        elif len(digitos) == 11:
+            telefone = f"({digitos[:2]}) {digitos[2:7]}-{digitos[7:]}"
+        else:
+            print("Telefone deve ter 10 ou 11 dígitos.\n")
+            continue
+        break
+
+    while True:
+        email = input("Email do paciente: ").strip()
+        if email == "0":
+            print("Operação cancelada.\n")
+            return
+        if email == "":
+            print("Email não pode ser vazio.\n")
+            continue
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+            print("Email inválido. Use o formato: nome@dominio.com\n")
+            continue
+        break
+
+    conexao = obter_conexao()
+
+    if conexao is None:
+        print("Não foi possível adicionar paciente: sem conexão com o banco.\n")
         return
 
-    data_nascimento = input("Data de nascimento (AAAA-MM-DD): ").strip()
+    cursor = None
 
-    if data_nascimento == "":
-        print("Data de nascimento nao pode ser vazia.\n")
+    try:
+        cursor = conexao.cursor()
+        cursor.execute(
+            """
+            INSERT INTO pacientes (nome, data_nascimento, telefone, email)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (nome, data_nascimento, telefone, email)
+        )
+        conexao.commit()
+
+    except Exception as erro:
+        conexao.rollback()
+        print("Erro ao adicionar paciente no banco de dados:")
+        print(erro)
+        print()
         return
 
-    telefone = input("Telefone do paciente: ").strip()
+    finally:
+        if cursor:
+            cursor.close()
 
-    if telefone == "":
-        print("Telefone nao pode ser vazio.\n")
-        return
+        fechar_conexao(conexao)
 
-    email = input("Email do paciente: ").strip()
+    fila.append([nome, data_nascimento, telefone, email])
 
-    if email == "":
-        print("Email nao pode ser vazio.\n")
-        return
-
-    impacto = ler_inteiro_entre(1, 5, "Impacto (1 a 5): ")
-    urgencia = ler_inteiro_entre(1, 5, "Urgência (1 a 5): ")
-
-    media = calcular_media(impacto, urgencia)
-
-    fila.append([nome, impacto, urgencia, media, data_nascimento, telefone, email])
-
-    print(f" Paciente '{nome}' adicionado.\n")
+    print(f"Paciente '{nome}' adicionado.\n")
 
 
 def adicionar_medico():
+    print("Digite 0 em qualquer campo para cancelar.\n")
+
     crm = input("CRM do medico: ").strip()
+
+    if crm == "0":
+        print("Operação cancelada.\n")
+        return
 
     if crm == "":
         print("CRM nao pode ser vazio.\n")
@@ -121,12 +197,19 @@ def adicionar_medico():
 
     nome = input("Nome do medico: ").strip()
 
+    if nome == "0":
+        print("Operação cancelada.\n")
+        return
+
     if nome == "":
         print("Nome nao pode ser vazio.\n")
         return
-    
 
     especialidade = input("Especialidade: ").strip()
+
+    if especialidade == "0":
+        print("Operação cancelada.\n")
+        return
 
     if especialidade == "":
         print("Especialidade nao pode ser vazia.\n")
@@ -173,8 +256,8 @@ def criar_chamado():
         return
 
     print("\n--- PACIENTES NA FILA ---")
-    for i, (nome, impacto, urgencia, media, *_) in enumerate(fila):
-        print(f"{i + 1} - {nome} | Urgência: {urgencia} | Impacto: {impacto} | Média: {media:.1f}")
+    for i, (nome, *_) in enumerate(fila):
+        print(f"{i + 1} - {nome}")
     print("-------------------------\n")
 
     while True:
@@ -198,8 +281,12 @@ def criar_chamado():
         print("Descrição não pode ser vazia.\n")
         return
 
-    nome, impacto, urgencia, media, data_nascimento, telefone, email = fila[indice][:7]
+    impacto = ler_inteiro_entre(1, 5, "Impacto (1 a 5): ")
+    urgencia = ler_inteiro_entre(1, 5, "Urgência (1 a 5): ")
+    media = calcular_media(impacto, urgencia)
     prioridade = definir_prioridade(media)
+
+    nome, data_nascimento, telefone, email = fila[indice][:4]
     conexao = obter_conexao()
 
     if conexao is None:
@@ -210,7 +297,7 @@ def criar_chamado():
 
     try:
         cursor = conexao.cursor()
-        medicos = listar_medicos(cursor)
+        medicos = _buscar_medicos(cursor)
 
         if not medicos:
             print("Nenhum medico cadastrado. Cadastre um medico primeiro.\n")
@@ -260,10 +347,10 @@ def criar_chamado():
 
         fechar_conexao(conexao)
 
-    if len(fila[indice]) == 7:
+    if len(fila[indice]) == 4:
         fila[indice].append([])
 
-    fila[indice][7].append(descricao)
+    fila[indice][4].append(descricao)
 
     print(f"Chamado criado para '{nome}' com prioridade {prioridade}.\n")
 
@@ -273,27 +360,11 @@ def chamar_proximo():
         print("Não há pacientes na fila.\n")
         return
 
-    indice_maior = 0
-
-    for i in range(1, len(fila)):
-
-        if fila[i][3] > fila[indice_maior][3]:
-            indice_maior = i
-
-        elif fila[i][3] == fila[indice_maior][3]:
-
-            if fila[i][2] > fila[indice_maior][2]:
-                indice_maior = i
-
-    paciente = fila.pop(indice_maior)
-
-    nome, impacto, urgencia, media = paciente[:4]
+    paciente = fila.pop(0)
+    nome = paciente[0]
 
     print("\nChamando próximo paciente:\n")
-    print(f"Nome: {nome}")
-    print(f"Impacto: {impacto}")
-    print(f"Urgência: {urgencia}")
-    print(f"Média: {media:.1f}\n")
+    print(f"Nome: {nome}\n")
 
 
 def ver_fila():
@@ -304,13 +375,8 @@ def ver_fila():
     print("\n--- FILA ATUAL ---")
 
     for paciente in fila:
-        nome, impacto, urgencia, media = paciente[:4]
-        print(
-            f"{nome} | "
-            f"Urgência: {urgencia} | "
-            f"Impacto: {impacto} | "
-            f"Média: {media:.1f}"
-        )
+        nome = paciente[0]
+        print(nome)
 
     print("------------------\n")
 
@@ -571,6 +637,33 @@ def alterar_status_chamado(novo_status):
 
     print(f"Status do chamado {id_chamado} atualizado para '{novo_status}'.\n")
 
+
+def listar_medicos():
+    conexao = obter_conexao()
+
+    if conexao is None:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conexao.cursor()
+
+        cursor.execute("SELECT id_medico, crm, nome, especialidade FROM medicos")
+        medicos = cursor.fetchall()
+
+        print("\n--- LISTA DE MÉDICOS ---")
+        for id_medico, crm, nome, especialidade in medicos:
+            print(f"ID: {id_medico} | CRM: {crm} | Nome: {nome} | Especialidade: {especialidade}")
+        print("------------------------\n")
+
+    except Exception as erro:
+        print("Erro:", erro)
+    
+    finally:
+        if cursor:
+            cursor.close()
+        fechar_conexao(conexao)
 
 def iniciar_chamado():
     alterar_status_chamado("Em andamento")

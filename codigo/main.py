@@ -5,6 +5,10 @@
 # 2º Urgência (desempate)
 # --------------------------------------------
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.services.fila_service import adicionar_paciente
 from src.services.fila_service import adicionar_medico
 from src.services.fila_service import criar_chamado
@@ -12,6 +16,7 @@ from src.services.fila_service import finalizar_chamado
 from src.services.fila_service import iniciar_chamado
 from src.services.fila_service import listar_pacientes
 from src.services.fila_service import ver_chamados
+from src.services.fila_service import listar_medicos
 
 
 def mostrar_menu():
@@ -26,6 +31,7 @@ def mostrar_menu():
     print("|  5  - Finalizar chamado              |")
     print("|  6  - Adicionar medico               |")
     print("|  7  - Listar pacientes               |")
+    print("|  8  - Listar medicos                 |")
     print("|  0  - Sair                           |")
     print("+--------------------------------------+")
 
@@ -56,6 +62,9 @@ def menu():
 
         elif opcao == "7":
             listar_pacientes()
+
+        elif opcao == "8":
+            listar_medicos()
 
         elif opcao == "0":
             print("\nEncerrando sistema...\n")
