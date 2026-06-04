@@ -200,4 +200,6 @@ A conexão com o banco de dados é feita através da biblioteca mysql.connector.
 O arquivo responsável pela conexão é: <br>
 src/config/database.py
 
+
 As informações de conexão são lidas do arquivo .env.
+

@@ -9,7 +9,7 @@ CREATE TABLE chamados (
     urgencia INT NOT NULL,
     prioridade VARCHAR(10),
     
-    status VARCHAR(20) DEFAULT 'Em Espera',
+    status VARCHAR(20) DEFAULT 'Em espera',
     data_abertura DATETIME DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente),
