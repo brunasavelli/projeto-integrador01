@@ -1,29 +1,13 @@
-# Importa a biblioteca 're', usada para trabalhar com expressões regulares 
-# (validação de formatos como nome, telefone, email, etc.) import re
 import re
-# Importa a variável 'fila', que é uma lista que armazena pacientes em espera
 from src.data.fila import fila
-# Importa funções para manipulação do banco de dados: 
-# - fechar_conexao: encerra a conexão com o banco 
-# - obter_conexao: cria/retorna uma conexão com o banco
 from src.config.database import fechar_conexao, obter_conexao
-# Importa uma função utilitária que lê um número inteiro dentro de um intervalo específico 
-# (evita erro de digitação do usuário)
 from src.utils.input_utils import ler_inteiro_entre
 
-# Lista com os possíveis status de um chamado (usado para controle do fluxo)
 STATUS_CHAMADOS = ["Aberta", "Em andamento", "Fechada"]
 
-# Função que calcula a média entre impacto e urgência
-# Isso é usado para definir a prioridade do chamado
 def calcular_media(impacto, urgencia):
     return (impacto + urgencia) / 2
 
-# Define a prioridade com base na média calculada 
-# Regras de negócio: 
-# >= 4 → Alta 
-# >= 2.5 → Média 
-# < 2.5 → Baixa
 def definir_prioridade(media):
     if media >= 4:
         return 'Alta'
@@ -33,11 +17,7 @@ def definir_prioridade(media):
 
     return 'Baixa'
 
-# Busca um paciente pelo nome no banco
-# Se existir → retorna o ID 
-# Se NÃO existir → cria um novo paciente e retorna o ID criado
 def obter_ou_criar_paciente(cursor, nome, data_nascimento=None, telefone=None, email=None):
-    # Executa uma query para buscar o paciente pelo nome
     cursor.execute(
         'SELECT id_paciente FROM pacientes WHERE nome = %s LIMIT 1',
         (nome,)
@@ -93,7 +73,6 @@ def obter_indice_paciente_por_nome(nome_paciente):
 
     return None
 
-# Função para adicionar paciente (entrada de dados + validação + banco)
 def adicionar_paciente():
     print("Digite 0 em qualquer campo para cancelar.\n")
     # Validação do nome
